@@ -1,0 +1,31 @@
+{% extends "protocol.html" %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='airtight/cytoscape.min.js') }}"></script>
+<script src="{{ url_for('static', filename='airtight/layout-base.js') }}"></script>
+<script src="{{ url_for('static', filename='airtight/avsdf-base.js') }}"></script>
+<script src="{{ url_for('static', filename='airtight/cytoscape-avsdf.js') }}"></script>
+<script src="{{ url_for('static', filename='airtight/dagre.js') }}"></script>
+<script src="{{ url_for('static', filename='airtight/cytoscape-dagre.js') }}"></script>
+<script src="{{ url_for('static', filename='airtight/cola.min.js') }}"></script>
+<script src="{{ url_for('static', filename='airtight/cytoscape-cola.js') }}"></script>
+{% endblock %}
+
+{% block left_view %}
+<table id="log">
+    <tr>
+        <th>Issues</th>
+        <th>Time</th>
+        <th>Event</th>
+        <th>Node</th>
+        <th>Slot</th>
+        <th>Packet</th>
+    </tr>
+</table>
+{% endblock %}
+
+{% block right_view %}
+<div id="graph"></div>
+<div id="info"></div>
+{% endblock %}
+
+{% block protocol %}airtight{% endblock %}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+        <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='main.js') }}"></script>
+        {% block scripts %}{% endblock %}
+    </head>
+    <body>
+        <div id="event-error-log"></div>
+        <div class="container-column">
+            <div class="top-view">
+                <div id="toolbar">
+                    <button onclick="app.clearSelection()">⊘ Clear Selection</button>
+                    <button onclick="appFramework.verifyRules()">✓ Verify Rules</button>
+                    {% block toolbar %}{% endblock %}
+                </div>
+            </div>
+            <div class="middle-view">
+                <div class="container-row">
+                    <div class="left-view">
+                        {% block left_view %}{% endblock %}
+                    </div>
+                    <div class="right-view">
+                        {% block right_view %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-view">
+                <div class="timeline-minimap-wrapper">
+                    <div class="timeline-minimap">
+                        <div id="timeline-minimap-view-box"></div>
+                    </div>
+                </div>
+                <div id="timeline"></div>
+            </div>
+        </div>
+        <script>
+            const PROTOCOL = "{% block protocol %}{% endblock %}";
+            var appFramework = null;
+            $(function () {
+                appFramework = new AppFramework();
+                appFramework.init();
+            });
+        </script>
+    </body>
+</html>

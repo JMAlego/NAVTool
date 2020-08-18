@@ -1,0 +1,12 @@
+{
+    "name": "AirTight",
+    "prefix": "airtight",
+    "data": {
+        "info": "info.json",
+        "graph": "graph.json",
+        "log": "log.json",
+        "slot_table": "slot_table.json"
+    },
+    "logic": "logic.js",
+    "rules": "rules.js"
+}
