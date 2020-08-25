@@ -6,9 +6,15 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import partial
 from itertools import permutations
+from os import path
 from typing import Dict, List, Union
 
+from flask import Flask, jsonify, render_template, request, send_from_directory
+
 from ..logs import Entry, EntryDictType, read_log_file
+
+PROTOCOL_PATH = "airtight"
+PROTOCOL_NAME = "AirTight"
 
 
 class RouteGraph:
@@ -152,6 +158,7 @@ class AirtightEntryType(Enum):
     ACK_SUCCESS = "ACK_SUCCESS"
     ACK_FAIL = "ACK_FAIL"
     OBSERVATION = "OBSERVATION"
+    DEQUEUE = "DEQUEUE"
 
 
 class AirtightEntry(Entry):
@@ -185,7 +192,7 @@ class AirtightEntry(Entry):
             **super().to_dict(), "event": self.event.value,
             "slot_id": self.slot_id,
             "node_id": self.node_id,
-            "packet_data": self.packet_data.to_dict(),
+            "packet_data": self.packet_data.to_dict() if self.packet_data else {},
             "raw_packet_data": self.raw_packet_data,
             "id": self.get_id()
         }
@@ -213,11 +220,11 @@ class AirtightLog:
             raise Exception("ID was not unique")
         self._log_by_id[entry_id] = entry
 
-    def to_dict(self) -> Dict[float, EntryDictType]:
+    def to_dict(self) -> Dict[float, List[EntryDictType]]:
         """Get a JSON friendly representation of the log."""
         return {time: [entry.to_dict() for entry in entries] for time, entries in self._log.items()}
 
-    def to_list(self) -> List[EntryDictType]:
+    def to_list(self) -> List[AirtightEntry]:
         """Get a JSON friendly representation of the log."""
         return [entry for _, entries in self._log.items() for entry in entries]
 
@@ -296,3 +303,53 @@ class AirtightSlotTable:
                 break
 
         return new_slot_table
+
+
+def routes(app: Flask, data_path: str):
+    """Initialise airtight routes."""
+    if not path.isfile(path.join(data_path, "routes.txt")):
+        raise Exception("routes.txt missing from data directory")
+    if not path.isfile(path.join(data_path, "data.log")):
+        raise Exception("data.log missing from data directory")
+    if not path.isfile(path.join(data_path, "slot_table.txt")):
+        raise Exception("slot_table.txt missing from data directory")
+
+    ROUTE_GRAPH = RouteGraph.from_file(path.join(data_path, "routes.txt"))
+    EVENT_LOG = AirtightLog.from_file(path.join(data_path, "data.log"))
+    SLOT_TABLE = AirtightSlotTable.from_file(path.join(data_path, "slot_table.txt"))
+
+    @app.route('/' + PROTOCOL_PATH + '/<path:path>')
+    def send_airtight_static(path):
+        """Send static airtight files."""
+        return send_from_directory('static/airtight', path)
+
+    @app.route('/' + PROTOCOL_PATH)
+    def airtight():
+        """Airtight UI."""
+        return render_template('airtight.html')
+
+    @app.route("/" + PROTOCOL_PATH + "/graph.json")
+    def airtight_graph():
+        """Airtight graph."""
+        return jsonify(ROUTE_GRAPH.to_dict())
+
+    @app.route("/" + PROTOCOL_PATH + "/slot_table.json")
+    def airtight_slot_table():
+        """Airtight slot table."""
+        return jsonify(SLOT_TABLE.to_dict())
+
+    @app.route("/" + PROTOCOL_PATH + "/info.json")
+    def airtight_info():
+        """Airtight slot table."""
+        return jsonify({"slot_length": 100})
+
+    @app.route("/" + PROTOCOL_PATH + "/log.json")
+    def airtight_log():
+        """Airtight log."""
+        filter_range = request.args.get("range")
+        filter_type = request.args.get("type")
+        shape = request.args.get("shape")
+        if shape == "linear":
+            return jsonify(EVENT_LOG.to_list())
+        else:
+            return jsonify(EVENT_LOG.to_dict())

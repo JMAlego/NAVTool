@@ -8,13 +8,55 @@ This project aims to create a simple to use tool for the analysis and visualisat
 
 This implementation is currently rather simplistic and needs reorganisation and additions to make it more protocol independent, ideally with more protocols implemented.
 
-## Running
+## Setting-Up & Running
 
-Create a virtual Python 3 environment and install the modules from requirements.txt.
+### Setting-Up Using a Virtual Environment
 
-Run the project as a module: `python3 -m NAVTool <DATA PATH>`.
+#### Windows
+
+```bat
+git clone https://github.com/JMAlego/NAVTool.git
+cd NAVTool
+python3 -m venv .venv
+.\.venv\Scripts\activate.bat
+pip install -r requirements.txt
+```
+
+#### Linux
+
+```sh
+git clone https://github.com/JMAlego/NAVTool.git
+cd NAVTool
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Setting-Up Without a Virtual Environment
+
+```sh
+git clone https://github.com/JMAlego/NAVTool.git
+cd NAVTool
+pip install -r requirements.txt
+```
+
+### Running
+
+To run simply use:
+
+```sh
+./run.sh ./example_data
+```
+
+or
+
+```sh
+./run.bat ./example_data
+```
 
 A data path argument is required which is a path to where the data to be analysed can be found.
+
+*NB*: Relative paths are resolved in relation to the module, not where the script was run from.
 
 ## AirTight Support
 
@@ -30,6 +72,13 @@ The AirTight protocol support includes:
 AirTight notifications are not currently supported, so synchronisation and other faults are not able to be inspected.
 
 Observation analysis is possible, though limited compared to log analysis.
+
+## TODO
+
+- Improvements to UI,
+- More modularity and shared elements in protocols,
+- Additional rules for analysis,
+- Additional visualisations.
 
 ## License
 

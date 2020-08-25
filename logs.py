@@ -2,15 +2,16 @@
 """Generic event log functions and classes."""
 
 from dataclasses import dataclass
-from typing import Iterator, Optional, Type, TypeVar, Dict, Union, List
 from hashlib import sha1
+from typing import (Any, Dict, Iterator, List, Optional, Type, TypeVar, Union,
+                    cast)
 
 # Can't do below definition as recursive types aren't supported by mypy yet (tm)
 # EntryDictTypeValue = Union[Dict[str, "EntryDictTypeValue"], List["EntryDictTypeValue"], str, int, float]
 # EntryDictType = Dict[str, EntryDictTypeValue]
 # This is a simplistic definition but should be sufficient, if restrictive
-EntryDictType = Dict[str, Union[Dict[str, Union[int, str]], Union[str, int, float,
-                                                                  List[Union[str, int, float]]]]]
+EntryDictType = Dict[str, Union[Optional[str], Dict[str, Union[int, str]],
+                                Union[str, int, float, List[Union[str, int, float]]]]]
 
 
 @dataclass
@@ -33,10 +34,7 @@ class Entry:
         return sha1((str(self.time) + "|" + self.value).encode("utf-8")).hexdigest()
 
 
-T = TypeVar("T", bound=Entry)
-
-
-def read_log_file(file: str, entry_type: Optional[Type[T]] = None) -> Iterator[T]:
+def read_log_file(file: str, entry_type: Optional[Type] = None) -> Any:
     """Read generic log entries from a log file."""
     if entry_type is None:
         entry_type = Entry  # type: ignore

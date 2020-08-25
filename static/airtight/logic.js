@@ -1,10 +1,64 @@
 /*jshint esversion: 6 */
+/**
+ * Protocol logic.
+ */
 
 const INFO = 0;
 const WARNING = 1;
 const ERROR = 2;
 
+const TIMELINE_ENTRY_WIDTH_PX = 50;
+const EVENT_TYPE_BACKGROUND_COLOURS = {
+    "SEND": "#444",
+    "ENQUEUE": "#444",
+    "DEQUEUE": "#444",
+    "TRANSMIT": "#4287f5",
+    "RECEIVE": "#42f569",
+    "ACK_SUCCESS": "#8af542",
+    "ACK_FAIL": "#f59642",
+    "OBSERVATION": "#9c9c9c",
+};
+const EVENT_TYPE_TEXT_COLOURS = {
+    "SEND": "#fff",
+    "ENQUEUE": "#fff",
+    "DEQUEUE": "#fff",
+    "TRANSMIT": "#000",
+    "RECEIVE": "#000",
+    "ACK_SUCCESS": "#000",
+    "ACK_FAIL": "#000",
+    "OBSERVATION": "#000",
+};
+const EVENT_TYPES = [
+    "SEND",
+    "ENQUEUE",
+    "DEQUEUE",
+    "TRANSMIT",
+    "RECEIVE",
+    "ACK_SUCCESS",
+    "ACK_FAIL",
+    "OBSERVATION",
+];
+const EVENT_TO_SLOT_ACTION = {
+    "SEND": null,
+    "ENQUEUE": null,
+    "DEQUEUE": null,
+    "TRANSMIT": "TRANSMIT",
+    "RECEIVE": "LISTEN",
+    "ACK_SUCCESS": "TRANSMIT",
+    "ACK_FAIL": "TRANSMIT",
+    "OBSERVATION": null,
+};
+const WIDTH_PER_TIME_UNIT = 25;
+
+/**
+ * Protocol application.
+ */
 class App {
+    /**
+     * Construct the protocol app.
+     *
+     * @param {AppFramework} context
+     */
     constructor(context) {
         this.context = context;
         this.graph = context.data.graph;
@@ -16,6 +70,9 @@ class App {
         this.cytoscape = null;
     }
 
+    /**
+     * Initialise the protocol.
+     */
     init() {
         console.log("Init app");
         this.initGraph();
@@ -23,6 +80,9 @@ class App {
         this.initTimeline();
     }
 
+    /**
+     * Initialise graph.
+     */
     initGraph() {
         console.log("Init graph");
         this.cytoscape = cytoscape({
@@ -104,6 +164,9 @@ class App {
         });
     }
 
+    /**
+     * Initialise log.
+     */
     initLog() {
         console.log("Init log");
         // We need to make sure that we iterate over the data in timeline order
@@ -127,45 +190,28 @@ class App {
         }
     }
 
+    /**
+     * Initialise the timeline.
+     */
     initTimeline() {
         console.log("Init timeline");
 
-        const TIMELINE_ENTRY_WIDTH_PX = 50;
-        const EVENT_TYPE_BACKGROUND_COLOURS = {
-            "SEND": "#444",
-            "ENQUEUE": "#444",
-            "TRANSMIT": "#4287f5",
-            "RECEIVE": "#42f569",
-            "ACK_SUCCESS": "#8af542",
-            "ACK_FAIL": "#f59642",
-            "OBSERVATION": "#9c9c9c",
-        };
-        const EVENT_TYPE_TEXT_COLOURS = {
-            "SEND": "#fff",
-            "ENQUEUE": "#fff",
-            "TRANSMIT": "#000",
-            "RECEIVE": "#000",
-            "ACK_SUCCESS": "#000",
-            "ACK_FAIL": "#000",
-            "OBSERVATION": "#000",
-        };
         const minTime = this.sortedLogKeys[0];
         const maxTime = this.sortedLogKeys[this.sortedLogKeys.length - 1];
 
         /*
             This calculation needs rework to actually be used. Could lead to _very_ wide timelines.
 
-        let minDiff = -1;
-        for (let index = 0; index < this.sortedLogKeys.length - 1; index++) {
-            const elementA = this.sortedLogKeys[index];
-            const elementB = this.sortedLogKeys[index + 1];
-            const diff = elementB - elementA;
-            if (diff < minDiff || minDiff == -1)
-                minDiff = diff;
-        }
-        const widthPerTimeUnit = Math.ceil(TIMELINE_ENTRY_WIDTH_PX / minDiff);
+            let minDiff = -1;
+            for (let index = 0; index < this.sortedLogKeys.length - 1; index++) {
+                const elementA = this.sortedLogKeys[index];
+                const elementB = this.sortedLogKeys[index + 1];
+                const diff = elementB - elementA;
+                if (diff < minDiff || minDiff == -1)
+                    minDiff = diff;
+            }
+            const widthPerTimeUnit = Math.ceil(TIMELINE_ENTRY_WIDTH_PX / minDiff);
         */
-        const WIDTH_PER_TIME_UNIT = 100;
 
         let timelines = {};
 
@@ -204,15 +250,11 @@ class App {
                         .addClass("timeline-node-heading-spacer")
                 );
 
-            timelines[node] = {
-                "SEND": $(document.createElement('div')),
-                "ENQUEUE": $(document.createElement('div')),
-                "TRANSMIT": $(document.createElement('div')),
-                "RECEIVE": $(document.createElement('div')),
-                "ACK_SUCCESS": $(document.createElement('div')),
-                "ACK_FAIL": $(document.createElement('div')),
-                "OBSERVATION": $(document.createElement('div')),
-            };
+            timelines[node] = {};
+
+            for (let event_type of EVENT_TYPES) {
+                timelines[node][event_type] = $(document.createElement('div'));
+            }
 
             for (let eventTypeName of Object.keys(timelines[node])) {
                 const eventType = timelines[node][eventTypeName];
@@ -258,6 +300,9 @@ class App {
 
     }
 
+    /**
+     * Handle the timeline scroll to update the minimap.
+     */
     handleTimelineScroll() {
         const timeline = document.getElementById("timeline");
         const timelineViewBox = document.getElementById("timeline-minimap-view-box");
@@ -272,26 +317,44 @@ class App {
         $(".timeline-node-heading").css("left", leftScroll);
     }
 
-    entries()
-    {
+    /**
+     * Get all log entries.
+     */
+    entries() {
         return Object.values(this.logById);
     }
 
+    /**
+     * Get the event ID of the selected UI event.
+     */
     getSelected() {
         // Nullish coalescing operator syntax highlighting is broken, so use the long form instead.
         const id = $(".selected").next().attr("id");
         return id ? id.split("-")[0] : null;
     }
 
+    /**
+     * Clear the info pane.
+     */
     clearInfoPane() {
         $("#info").html("<!-- Nothing. -->");
     }
 
+    /**
+     * Set the info pain to be a specific element.
+     *
+     * @param {Element} element
+     */
     setInfoPane(element) {
         this.clearInfoPane();
         $("#info").append(element);
     }
 
+    /**
+     * Update the info pain with specific information.
+     *
+     * @param {[[String, String]]} rows
+     */
     updateInfoPane(rows) {
         this.clearInfoPane();
         let infoTable = $(document.createElement('table'));
@@ -308,6 +371,11 @@ class App {
         this.setInfoPane(infoTable);
     }
 
+    /**
+     * Update the info pane to show information about the specified ID.
+     *
+     * @param {String} log_id
+     */
     updateInfoPaneByLogId(log_id) {
         const elementEntry = this.logById[log_id];
         this.updateInfoPane([
@@ -331,6 +399,9 @@ class App {
         ]);
     }
 
+    /**
+     * Clear the selection of an event across all UI elements.
+     */
     clearSelection() {
         this.clearInfoPane();
         $(".selected").removeClass("selected");
@@ -339,6 +410,11 @@ class App {
         this.cytoscape.edges().removeClass("selected");
     }
 
+    /**
+     * Set the selected event across all UI elements in which it appears.
+     *
+     * @param {String} selected_id
+     */
     setSelected(selected_id) {
         this.updateInfoPaneByLogId(selected_id);
         $(".selected").removeClass("selected");
@@ -357,14 +433,29 @@ class App {
         this.cytoscape.getElementById(`n${entry.packet_data.hop_destination}`).addClass("selected-target");
     }
 
+    /**
+     * Handle single click on log entry.
+     *
+     * @param {Event} event
+     */
     logEntryClickHandler(event) {
         this.setSelected(event.currentTarget.id);
     }
 
+    /**
+     * Handle double click on log entry.
+     *
+     * @param {Event} event
+     */
     logEntryDoubleClickHandler(event) {
         this.showErrorLogForEvent(event.currentTarget.id);
     }
 
+    /**
+     * Show the error log for an event.
+     *
+     * @param {String} id
+     */
     showErrorLogForEvent(id) {
         $("#event-error-log").html("<div id=\"close\" onclick=\"$('#event-error-log').hide()\">X</div>");
         for (let element of $(document.getElementById(id)).find(".error-container span")) {
@@ -373,10 +464,22 @@ class App {
         $("#event-error-log").show();
     }
 
+    /**
+     * Handler for clicking on items in the timeline.
+     *
+     * @param {Event} event
+     */
     timelineEntryClickHandler(event) {
         this.setSelected(event.currentTarget.id.substr(0, event.currentTarget.id.length - 3));
     }
 
+    /**
+     * Find events in a time range with a specific entry type.
+     *
+     * @param {Number} timeStart
+     * @param {Number} timeEnd
+     * @param {String} entryType
+     */
     findInRange(timeStart, timeEnd, entryType) {
         let matches = [];
         for (let key of this.sortedLogKeys.filter(x => timeStart <= x && x <= timeEnd)) {
@@ -389,6 +492,14 @@ class App {
         return matches;
     }
 
+    /**
+     *  Find events in a time range with a specific entry type and node id.
+     *
+     * @param {Number} timeStart
+     * @param {Number} timeEnd
+     * @param {String} entryType
+     * @param {String} nodeId
+     */
     findInRangeWithNodeId(timeStart, timeEnd, entryType, nodeId) {
         let matches = [];
         for (let entry of this.findInRange(timeStart, timeEnd, entryType)) {
@@ -399,19 +510,11 @@ class App {
         return matches;
     }
 
-    verifyHop() {
-        const parent = this;
-        const MAX_DRIFT = 100;
-        function findHopStart() {
-            const entry = parent.logById[selected];
-            if (entry.event == "RECEIVE" || entry.event == "OBSERVATION") {
-
-            }
-        }
-        let selected = this.getSelected();
-        if (!selected) return;
-    }
-
+    /**
+     * Verify the transmit spacing of transmit events.
+     *
+     * @param {String} node_id
+     */
     verifyTransmitSpacing(node_id) {
         let lastTransmit = -1;
         let intervals = [];
@@ -433,16 +536,10 @@ class App {
         }
     }
 
+    /**
+     * Verify slot associations.
+     */
     verifySlots() {
-        const EVENT_TO_SLOT_ACTION = {
-            "SEND": null,
-            "ENQUEUE": null,
-            "TRANSMIT": "TRANSMIT",
-            "RECEIVE": "LISTEN",
-            "ACK_SUCCESS": "TRANSMIT",
-            "ACK_FAIL": "TRANSMIT",
-            "OBSERVATION": null,
-        }
         for (let key of this.sortedLogKeys) {
             for (let entry of this.log[key]) {
                 const slotAction = this.slotTable[entry.node_id][entry.slot_id];
@@ -459,6 +556,14 @@ class App {
         }
     }
 
+    /**
+     * Add an error to a log entry.
+     *
+     * @param {Element} entry
+     * @param {String} errorText
+     * @param {Number} errorLevel
+     * @param {String} errorSource
+     */
     addErrorToEntry(entry, errorText, errorLevel, errorSource) {
         const errorLevelToClass = ["info", "warning", "error"];
         $(document.getElementById(entry.id)).find(".error-container")

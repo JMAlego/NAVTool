@@ -7,9 +7,11 @@
         <div class="container-centre">
             <div class="centre-box larger-text">
                 <h2>Protocols</h2>
+                {% for protocol in protocols.values() %}
                 <p>
-                    <a href="/airtight">AirTight</a>
+                    <a href="/{{ protocol.PROTOCOL_PATH }}">{{ protocol.PROTOCOL_NAME }}</a>
                 </p>
+                {% endfor %}
             </div>
         </div>
     </body>

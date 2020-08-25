@@ -80,5 +80,34 @@ const RULES = [
                 context.app.addErrorToEntry(entry, "Transmit event was recorded ahead of receive, synchronisation issue?.", WARNING, "event-rules");
             }
         }
+    },
+    (context, entry) => { /* Find dequeues due to failed acknowledges. */
+        if (entry.event != "DEQUEUE")
+            return;
+
+        let rangeStart = entry.time - 10;
+        if (rangeStart < 0) rangeStart = 0;
+
+        let matches = context.app.findInRange(rangeStart, entry.time + 10, "ACK_FAIL");
+
+        let failCount = 0;
+
+        for (let match of matches) {
+            if (
+                match.priority == entry.priority &&
+                match.criticality == entry.criticality &&
+                match.flow_id == entry.flow_id &&
+                match.source == entry.source &&
+                match.destination == entry.destination &&
+                match.sequence_number == entry.sequence_number &&
+                match.data == entry.data
+            ) {
+                failCount += 1;
+            }
+        }
+
+        if (failCount > 0) {
+            context.app.addErrorToEntry(entry, "Packet was dequeued due to failed acknowledgement limit.", WARNING, "event-rules");
+        }
     }
 ];

@@ -190,6 +190,7 @@ button {
     top: 3%;
     right: 3%;
     font-size: 150%;
+    cursor: pointer;
 }
 
 #timeline-minimap-view-box {
