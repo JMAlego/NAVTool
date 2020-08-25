@@ -11,7 +11,7 @@ from typing import Dict, List, Union
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
-from ..logs import Entry, EntryDictType, read_log_file
+from ..logs import Entry, EntryDictType, read_log_file, read_log_files
 
 PROTOCOL_PATH = "airtight"
 PROTOCOL_NAME = "AirTight"
@@ -199,6 +199,7 @@ class AirtightEntry(Entry):
 
 
 _read_airtight_log_file = partial(read_log_file, entry_type=AirtightEntry)
+_read_airtight_log_files = partial(read_log_files, entry_type=AirtightEntry)
 
 
 class AirtightLog:
@@ -234,6 +235,16 @@ class AirtightLog:
         new_log = AirtightLog()
 
         for entry in _read_airtight_log_file(file):
+            new_log.add_entry(entry)
+
+        return new_log
+
+    @staticmethod
+    def from_folder(folder: str) -> "AirtightLog":
+        """Generate a new log from a log folder."""
+        new_log = AirtightLog()
+
+        for entry in _read_airtight_log_files(folder):
             new_log.add_entry(entry)
 
         return new_log
@@ -309,13 +320,13 @@ def routes(app: Flask, data_path: str):
     """Initialise airtight routes."""
     if not path.isfile(path.join(data_path, "routes.txt")):
         raise Exception("routes.txt missing from data directory")
-    if not path.isfile(path.join(data_path, "data.log")):
-        raise Exception("data.log missing from data directory")
+    if not path.isdir(data_path):
+        raise Exception("Data directory missing")
     if not path.isfile(path.join(data_path, "slot_table.txt")):
         raise Exception("slot_table.txt missing from data directory")
 
     ROUTE_GRAPH = RouteGraph.from_file(path.join(data_path, "routes.txt"))
-    EVENT_LOG = AirtightLog.from_file(path.join(data_path, "data.log"))
+    EVENT_LOG = AirtightLog.from_folder(data_path)
     SLOT_TABLE = AirtightSlotTable.from_file(path.join(data_path, "slot_table.txt"))
 
     @app.route('/' + PROTOCOL_PATH + '/<path:path>')

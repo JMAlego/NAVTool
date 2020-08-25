@@ -3,8 +3,8 @@
 
 from dataclasses import dataclass
 from hashlib import sha1
-from typing import (Any, Dict, Iterator, List, Optional, Type, TypeVar, Union,
-                    cast)
+from typing import (Any, Dict, Iterator, List, Optional, Type, TypeVar, Union, cast)
+from os import path, listdir
 
 # Can't do below definition as recursive types aren't supported by mypy yet (tm)
 # EntryDictTypeValue = Union[Dict[str, "EntryDictTypeValue"], List["EntryDictTypeValue"], str, int, float]
@@ -47,3 +47,9 @@ def read_log_file(file: str, entry_type: Optional[Type] = None) -> Any:
                 continue
             time, *rest = line.split(" ")
             yield entry_type(time=float(time), value=" ".join(rest))
+
+
+def read_log_files(folder: str, entry_type: Optional[Type] = None) -> Any:
+    """Read generic log entries from a log folder."""
+    for file in filter(lambda x: path.splitext(x)[-1] == ".log", listdir(folder)):
+        yield from read_log_file(path.join(folder, file), entry_type)
